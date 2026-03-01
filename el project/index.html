@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will You Dance With Me? 💌</title>
+  <style>
+    /* ===== BASE STYLES ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh; /* dynamic viewport height for mobile browsers */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #fce4ec, #f8bbd0, #f48fb1);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    /* ===== FLOATING HEARTS BACKGROUND ===== */
+    .hearts-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .floating-heart {
+      position: absolute;
+      bottom: -40px;
+      font-size: 20px;
+      animation: floatUp linear infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0.5; }
+      100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ===== MAIN STAGE (centers everything) ===== */
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .stage > * {
+      pointer-events: auto;
+    }
+
+    /* ===== ENVELOPE CONTAINER ===== */
+    .envelope-wrapper {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    /* ===== ENVELOPE ===== */
+    .envelope {
+      width: 260px;
+      height: 180px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .envelope:hover {
+      transform: scale(1.05);
+    }
+
+    /* Envelope body */
+    .envelope-body {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #f48fb1, #ec407a);
+      border-radius: 0 0 12px 12px;
+      position: relative;
+      box-shadow: 0 8px 30px rgba(236, 64, 122, 0.4);
+      overflow: hidden;
+    }
+
+    /* Inner flap shadow */
+    .envelope-body::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.08), transparent);
+    }
+
+    /* Envelope flap (triangle) */
+    .envelope-flap {
+      width: 0;
+      height: 0;
+      border-left: 130px solid transparent;
+      border-right: 130px solid transparent;
+      border-top: 100px solid #f06292;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+      transform-origin: top center;
+      transition: transform 0.6s ease;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+    }
+
+    /* Opened flap */
+    .envelope.opened .envelope-flap {
+      transform: rotateX(180deg);
+    }
+
+    /* Heart seal on envelope */
+    .envelope-seal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      z-index: 3;
+      animation: heartbeat 1.2s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50%      { transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    /* Click hint text */
+    .click-hint {
+      margin-top: 20px;
+      color: #ad1457;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    /* ===== MESSAGE CARD ===== */
+    .message-card {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      width: min(340px, 90vw);
+      background: white;
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 15px 50px rgba(236, 64, 122, 0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      z-index: 10;
+      max-height: 90vh;
+      max-height: 90dvh;
+      overflow-y: auto;
+    }
+
+    .message-card.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: all;
+    }
+
+    .message-card h2 {
+      font-size: clamp(18px, 5vw, 24px);
+      color: #c2185b;
+      margin-bottom: 8px;
+    }
+
+    .message-card p {
+      font-size: clamp(14px, 3.5vw, 16px);
+      color: #666;
+      margin-bottom: 28px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      overflow: visible;
+      min-height: 60px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    /* Yes button */
+    .btn-yes {
+      background: linear-gradient(135deg, #ec407a, #f06292);
+      color: white;
+      padding: 14px 36px;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(236, 64, 122, 0.4);
+    }
+
+    .btn-yes:hover {
+      background: linear-gradient(135deg, #d81b60, #ec407a);
+      box-shadow: 0 6px 25px rgba(236, 64, 122, 0.6);
+      transform: translateY(-2px);
+    }
+
+    /* No button */
+    .btn-no {
+      background: #f5f5f5;
+      color: #999;
+      padding: 14px 36px;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .btn-no:hover {
+      background: #eeeeee;
+    }
+
+    /* No button wiggle when hovered */
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      20%  { transform: rotate(-12deg); }
+      40%  { transform: rotate(10deg); }
+      60%  { transform: rotate(-8deg); }
+      80%  { transform: rotate(6deg); }
+    }
+
+    .btn-no.wiggle {
+      animation: wiggle 0.4s ease;
+    }
+
+    /* Card shake when No is clicked */
+    @keyframes cardShake {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      10% { transform: translate(calc(-50% - 8px), -50%) rotate(-1deg); }
+      30% { transform: translate(calc(-50% + 8px), -50%) rotate(1deg); }
+      50% { transform: translate(calc(-50% - 6px), -50%); }
+      70% { transform: translate(calc(-50% + 6px), -50%); }
+      90% { transform: translate(calc(-50% - 3px), -50%); }
+    }
+
+    .message-card.shake {
+      animation: cardShake 0.5s ease;
+    }
+
+    /* Sparkle cursor trail */
+    .sparkle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      font-size: 14px;
+      animation: sparkleFade 0.8s ease forwards;
+    }
+
+    @keyframes sparkleFade {
+      0%   { transform: scale(1) translateY(0); opacity: 1; }
+      100% { transform: scale(0) translateY(-30px); opacity: 0; }
+    }
+
+    /* Heart burst on click */
+    .heart-burst {
+      position: fixed;
+      pointer-events: none;
+      z-index: 998;
+      font-size: 20px;
+      animation: heartBurst 0.9s ease forwards;
+    }
+
+    @keyframes heartBurst {
+      0%   { transform: scale(0.5) translate(0, 0); opacity: 1; }
+      100% { transform: scale(1.2) translate(var(--tx), var(--ty)); opacity: 0; }
+    }
+
+    /* Yes button glow pulse when growing */
+    @keyframes yesGlow {
+      0%, 100% { box-shadow: 0 4px 15px rgba(236, 64, 122, 0.4); }
+      50%      { box-shadow: 0 0 35px rgba(236, 64, 122, 0.8), 0 0 60px rgba(233, 30, 99, 0.4); }
+    }
+
+    .btn-yes.glowing {
+      animation: yesGlow 1.2s ease-in-out infinite;
+    }
+
+    /* ===== SUCCESS SCREEN ===== */
+    .success-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+
+    .success-screen.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .success-screen h1 {
+      font-size: clamp(28px, 7vw, 42px);
+      color: #c2185b;
+      margin-bottom: 10px;
+      animation: bounceIn 0.8s ease forwards;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .success-screen p {
+      font-size: clamp(17px, 4.5vw, 22px);
+      color: #e91e63;
+      animation: bounceIn 0.8s ease 0.2s forwards;
+      opacity: 0;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .success-hearts {
+      font-size: clamp(40px, 12vw, 60px);
+      margin-bottom: 20px;
+      animation: bounceIn 0.8s ease 0.4s forwards;
+      opacity: 0;
+    }
+
+    /* Dancing couple animation on success */
+    .success-hearts.dance {
+      animation: bounceIn 0.8s ease forwards, danceSway 1.5s ease-in-out 1s infinite;
+    }
+
+    @keyframes danceSway {
+      0%, 100% { transform: rotate(-5deg) translateX(-5px); }
+      50%      { transform: rotate(5deg) translateX(5px); }
+    }
+
+    /* Typing cursor for the romantic quote */
+    .typing-quote {
+      font-size: clamp(13px, 3.2vw, 16px);
+      color: #ad1457;
+      margin-top: 25px;
+      font-style: italic;
+      opacity: 0;
+      animation: fadeInUp 0.6s ease 1.5s forwards;
+      min-height: 24px;
+      text-align: center;
+      padding: 0 20px;
+      max-width: 500px;
+    }
+
+    .typing-quote .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 18px;
+      background: #ad1457;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blinkCursor 0.6s step-end infinite;
+    }
+
+    @keyframes blinkCursor {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0; }
+    }
+
+    @keyframes fadeInUp {
+      0%   { opacity: 0; transform: translateY(15px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Countdown of No clicks shown humorously */
+    .no-counter {
+      font-size: 12px;
+      color: #e91e63;
+      margin-top: 12px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .no-counter.visible {
+      opacity: 1;
+    }
+
+    @keyframes bounceIn {
+      0%   { transform: scale(0.3); opacity: 0; }
+      50%  { transform: scale(1.1); }
+      70%  { transform: scale(0.95); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ===== POPUP (No response) ===== */
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .popup-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .popup-box {
+      background: white;
+      border-radius: 20px;
+      padding: 35px 30px;
+      text-align: center;
+      width: min(320px, 85vw);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+      transform: scale(0.7);
+      transition: transform 0.3s ease;
+      margin: 20px;
+    }
+
+    .popup-overlay.visible .popup-box {
+      transform: scale(1);
+    }
+
+    .popup-box p {
+      font-size: clamp(16px, 4.5vw, 20px);
+      color: #c2185b;
+      margin-bottom: 20px;
+    }
+
+    .popup-close {
+      background: linear-gradient(135deg, #ec407a, #f06292);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 50px;
+      font-size: clamp(13px, 3.2vw, 14px);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      min-height: 44px;
+    }
+
+    .popup-close:hover {
+      background: linear-gradient(135deg, #d81b60, #ec407a);
+    }
+
+    /* ===== CONFETTI ===== */
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      z-index: 101;
+      animation: confettiFall linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0%   { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ===== MOBILE RESPONSIVE ===== */
+
+    /* Tablets (max-width: 768px) */
+    @media (max-width: 768px) {
+      .envelope {
+        width: 220px;
+        height: 152px;
+      }
+
+      .envelope-flap {
+        border-left: 110px solid transparent;
+        border-right: 110px solid transparent;
+        border-top: 86px solid #f06292;
+      }
+    }
+
+    /* Phones (max-width: 480px) */
+    @media (max-width: 480px) {
+      .envelope {
+        width: 190px;
+        height: 132px;
+      }
+
+      .envelope-flap {
+        border-left: 95px solid transparent;
+        border-right: 95px solid transparent;
+        border-top: 74px solid #f06292;
+      }
+
+      .envelope-seal {
+        font-size: 28px;
+      }
+
+      .click-hint {
+        font-size: 13px;
+        margin-top: 14px;
+      }
+
+      .message-card {
+        padding: 28px 20px;
+      }
+
+      .message-card p {
+        margin-bottom: 20px;
+      }
+
+      /* Stack buttons vertically on narrow screens */
+      .buttons {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+
+    /* Very small phones (max-width: 360px) */
+    @media (max-width: 360px) {
+      .envelope {
+        width: 160px;
+        height: 112px;
+      }
+
+      .envelope-flap {
+        border-left: 80px solid transparent;
+        border-right: 80px solid transparent;
+        border-top: 62px solid #f06292;
+      }
+
+      .envelope-seal {
+        font-size: 24px;
+      }
+
+      .message-card {
+        padding: 22px 16px;
+      }
+    }
+
+    /* Landscape mobile: tighten vertical spacing */
+    @media (max-height: 500px) {
+      .message-card {
+        padding: 18px 16px;
+        max-height: 85vh;
+      }
+
+      .message-card p {
+        margin-bottom: 14px;
+      }
+
+      .success-hearts {
+        margin-bottom: 10px;
+      }
+    }
+
+    /* Tall phones (e.g. notch phones) */
+    @media (min-height: 700px) and (max-width: 480px) {
+      .message-card {
+        padding: 35px 24px;
+      }
+    }
+
+    /* Touch-friendly: larger tap targets, no sparkle (perf) */
+    @media (hover: none) and (pointer: coarse) {
+      .btn-yes, .btn-no {
+        min-height: 48px;
+        min-width: 120px;
+      }
+
+      .popup-close {
+        min-height: 48px;
+        padding: 14px 28px;
+      }
+
+      .sparkle {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Floating Hearts Background ===== -->
+  <div class="hearts-bg" id="heartsBg"></div>
+
+  <!-- ===== Centered Stage ===== -->
+  <div class="stage">
+    <!-- ===== Envelope ===== -->
+    <div class="envelope-wrapper" id="envelopeWrapper">
+      <div class="envelope" id="envelope">
+        <div class="envelope-flap"></div>
+        <div class="envelope-body"></div>
+        <span class="envelope-seal">💗</span>
+      </div>
+      <span class="click-hint" id="clickHint">Click to open 💌</span>
+    </div>
+  </div>
+
+  <!-- ===== Message Card (fixed centered, separate from stage) ===== -->
+  <div class="message-card" id="messageCard">
+    <h2>💃 Will you dance with me? 🕺</h2>
+    <p>I promise I won't step on your toes... much 😉</p>
+    <div class="buttons">
+      <button class="btn btn-yes" id="btnYes">Yes 💖</button>
+      <button class="btn btn-no" id="btnNo">No 😢</button>
+    </div>
+    <div class="no-counter" id="noCounter"></div>
+  </div>
+
+  <!-- ===== Success Screen ===== -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-hearts" id="successHearts">💃🕺</div>
+    <h1>Yay! I can't wait 💖</h1>
+    <p>Save a dance for me! 🌹</p>
+    <div class="typing-quote" id="typingQuote"><span id="quoteText"></span><span class="cursor"></span></div>
+  </div>
+
+  <!-- ===== Popup for "No" ===== -->
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup-box">
+      <p id="popupText">Are you sure? 🥺</p>
+      <button class="popup-close" id="popupClose">Okay, let me reconsider...</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== DOM REFERENCES =====
+    const envelopeWrapper = document.getElementById('envelopeWrapper');
+    const envelope = document.getElementById('envelope');
+    const clickHint = document.getElementById('clickHint');
+    const messageCard = document.getElementById('messageCard');
+    const btnYes = document.getElementById('btnYes');
+    const btnNo = document.getElementById('btnNo');
+    const successScreen = document.getElementById('successScreen');
+    const popupOverlay = document.getElementById('popupOverlay');
+    const popupText = document.getElementById('popupText');
+    const popupClose = document.getElementById('popupClose');
+    const heartsBg = document.getElementById('heartsBg');
+
+    const successHearts = document.getElementById('successHearts');
+    const quoteText = document.getElementById('quoteText');
+    const noCounter = document.getElementById('noCounter');
+
+    // ===== STATE =====
+    let noClickCount = 0;       // Track how many times "No" was clicked
+    let envelopeOpened = false;  // Prevent re-triggering envelope animation
+    let sparkleThrottle = 0;    // Throttle sparkle creation
+
+    // Playful popup messages that cycle through
+    const noMessages = [
+      "Are you sure? 🥺",
+      "Really?? Think again! 😤💕",
+      "You're breaking my heart... 💔",
+      "The Yes button is right there! 👉👈",
+      "I'll keep asking... 🥹",
+      "Pretty please? 🌸",
+      "You know you want to say Yes! 😏💗",
+      "I'm not giving up! 💪💖",
+      "My heart can only take so much... 😭",
+      "*sad dancing alone noises* 🥲💃"
+    ];
+
+    // Yes button text evolves to be more romantic each time No is clicked
+    const yesTexts = [
+      "Yes 💖",
+      "YES! 💖",
+      "YES!! 💕",
+      "YESSS! 🥰",
+      "SAY YES 💗",
+      "PLEASE YES 🌹",
+      "💖 YES FOREVER 💖",
+      "✨ YES MY LOVE ✨",
+      "💃 LET'S DANCE! 🕺",
+      "YOU KNOW IT'S YES 💘"
+    ];
+
+    // No button text also changes humorously
+    const noTexts = [
+      "No 😢",
+      "Still no? 😿",
+      "Nope? 🫠",
+      "Really? 😑",
+      "Cruel 💀",
+      "...*sniff* 😤",
+      "Why? 🥀",
+      "Heartless! 🧊",
+      "ok fine 😶",
+      "(just click Yes)"
+    ];
+
+    // Romantic quotes for success screen typing effect
+    const romanticQuotes = [
+      "\"Every love story is beautiful, but ours will be my favorite.\" 💕",
+      "\"I could dance with you forever and it still wouldn't be enough.\" 🌙",
+      "\"You had me at... well, you just had me.\" ✨",
+      "\"Two hearts, one dance floor, infinite memories.\" 💫"
+    ];
+
+    // Humorous No-click counter messages
+    const counterMessages = [
+      "",
+      "rejected once... ouch 🩹",
+      "twice?! the audacity 😤",
+      "3 times... I'm keeping count 📝",
+      "4 NOs? this is a villain origin story 🦹",
+      "5?! okay shakespeare, how tragic 🎭",
+      "6 times... are you training my patience? 🧘",
+      "7 NOs... lucky number, change your mind? 🍀",
+      "8... I admire your commitment to chaos 🤡",
+      "9 times. we're in the double digits zone soon 📊",
+      "10!! 🎉 congrats you unlocked: ✨EXTRA GUILT✨"
+    ];
+
+    // ===== FLOATING HEARTS =====
+    // Create gentle floating hearts in the background
+    function createFloatingHearts() {
+      const hearts = ['💕', '💗', '💖', '🩷', '♥', '✨'];
+      for (let i = 0; i < 15; i++) {
+        const heart = document.createElement('span');
+        heart.classList.add('floating-heart');
+        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        heart.style.left = Math.random() * 100 + '%';
+        heart.style.animationDuration = (6 + Math.random() * 8) + 's';
+        heart.style.animationDelay = (Math.random() * 10) + 's';
+        heart.style.fontSize = (14 + Math.random() * 18) + 'px';
+        heartsBg.appendChild(heart);
+      }
+    }
+    createFloatingHearts();
+
+    // ===== ENVELOPE CLICK =====
+    envelopeWrapper.addEventListener('click', () => {
+      if (envelopeOpened) return;
+      envelopeOpened = true;
+
+      // Open the flap
+      envelope.classList.add('opened');
+      clickHint.style.display = 'none';
+
+      // After flap opens, slide envelope up and show the card
+      setTimeout(() => {
+        envelopeWrapper.style.transition = 'transform 0.6s ease, opacity 0.6s ease';
+        envelopeWrapper.style.transform = 'translateY(-60px) scale(0.7)';
+        envelopeWrapper.style.opacity = '0';
+        envelopeWrapper.style.pointerEvents = 'none';
+      }, 500);
+
+      setTimeout(() => {
+        messageCard.classList.add('visible');
+      }, 900);
+    });
+
+    // ===== SPARKLE CURSOR TRAIL =====
+    // Creates little sparkles following the mouse/touch for a magical feel
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (!isTouchDevice) {
+      // Desktop: sparkles follow mouse
+      document.addEventListener('mousemove', (e) => {
+        sparkleThrottle++;
+        if (sparkleThrottle % 3 !== 0) return;
+
+        const sparkle = document.createElement('span');
+        sparkle.classList.add('sparkle');
+        sparkle.textContent = ['✨', '💕', '⭐', '💗', '🌸'][Math.floor(Math.random() * 5)];
+        sparkle.style.left = e.clientX + 'px';
+        sparkle.style.top = e.clientY + 'px';
+        document.body.appendChild(sparkle);
+        setTimeout(() => sparkle.remove(), 800);
+      });
+    }
+
+    // ===== HEART BURST ON CLICK/TAP =====
+    // Creates a burst of hearts wherever the user clicks or taps
+    function createHeartBurst(x, y) {
+      for (let i = 0; i < 6; i++) {
+        const heart = document.createElement('span');
+        heart.classList.add('heart-burst');
+        heart.textContent = ['💖', '💗', '💕', '🩷', '♥'][Math.floor(Math.random() * 5)];
+        heart.style.left = x + 'px';
+        heart.style.top = y + 'px';
+        const angle = (Math.PI * 2 / 6) * i;
+        heart.style.setProperty('--tx', Math.cos(angle) * (40 + Math.random() * 40) + 'px');
+        heart.style.setProperty('--ty', Math.sin(angle) * (40 + Math.random() * 40) + 'px');
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 900);
+      }
+    }
+
+    document.addEventListener('click', (e) => createHeartBurst(e.clientX, e.clientY));
+
+    // Touch support: burst on tap
+    document.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      if (touch) createHeartBurst(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    // ===== NO BUTTON DODGE (runs away on hover/touch!) =====
+    // After 2 No clicks, button dodges cursor. On mobile, it jumps after each tap.
+    function dodgeNoButton() {
+      if (noClickCount >= 2) {
+        const card = messageCard.getBoundingClientRect();
+        const maxX = card.width / 2 - 50;
+        const maxY = card.height / 2 - 30;
+        const randX = (Math.random() - 0.5) * maxX * 2;
+        const randY = (Math.random() - 0.5) * maxY;
+        btnNo.style.position = 'relative';
+        btnNo.style.left = randX + 'px';
+        btnNo.style.top = randY + 'px';
+        btnNo.classList.add('wiggle');
+        setTimeout(() => btnNo.classList.remove('wiggle'), 400);
+      }
+    }
+
+    btnNo.addEventListener('mouseenter', dodgeNoButton);
+    // On mobile: dodge after the popup closes (since there's no hover)
+    popupClose.addEventListener('click', () => {
+      popupOverlay.classList.remove('visible');
+      if (isTouchDevice) {
+        setTimeout(dodgeNoButton, 100);
+      }
+    });
+
+    // ===== YES BUTTON =====
+    btnYes.addEventListener('click', () => {
+      // Hide the message card
+      messageCard.classList.remove('visible');
+
+      // Show success screen with dancing animation
+      setTimeout(() => {
+        successScreen.classList.add('visible');
+        successHearts.classList.add('dance');
+        launchConfetti();
+
+        // Start typing the romantic quote after a delay
+        setTimeout(() => {
+          typeQuote(romanticQuotes[Math.floor(Math.random() * romanticQuotes.length)]);
+        }, 2000);
+
+        // Continuous confetti waves for extra celebration!
+        setTimeout(() => launchConfetti(), 2000);
+        setTimeout(() => launchConfetti(), 4000);
+      }, 300);
+    });
+
+    // ===== NO BUTTON =====
+    btnNo.addEventListener('click', () => {
+      noClickCount++;
+
+      // Pick a message from the list (cycles through)
+      popupText.textContent = noMessages[(noClickCount - 1) % noMessages.length];
+
+      // Show the playful popup
+      popupOverlay.classList.add('visible');
+
+      // Shake the message card for dramatic effect!
+      messageCard.classList.add('shake');
+      setTimeout(() => messageCard.classList.remove('shake'), 500);
+
+      // Grow the Yes button each time No is clicked
+      const newScale = 1 + noClickCount * 0.22;
+      const newPadding = 14 + noClickCount * 4;
+      const newFontSize = 16 + noClickCount * 2;
+      btnYes.style.transform = `scale(${newScale})`;
+      btnYes.style.padding = `${newPadding}px ${newPadding * 2.5}px`;
+      btnYes.style.fontSize = `${newFontSize}px`;
+
+      // Add glow effect to Yes button after 2 clicks
+      if (noClickCount >= 2) {
+        btnYes.classList.add('glowing');
+      }
+
+      // Update Yes button text to be more romantic/desperate
+      btnYes.textContent = yesTexts[Math.min(noClickCount, yesTexts.length - 1)];
+
+      // Update No button text to be funnier
+      btnNo.textContent = noTexts[Math.min(noClickCount, noTexts.length - 1)];
+
+      // Shrink the No button slightly each time
+      const noScale = Math.max(0.4, 1 - noClickCount * 0.1);
+      btnNo.style.transform = `scale(${noScale})`;
+      btnNo.style.opacity = Math.max(0.3, 1 - noClickCount * 0.12);
+
+      // Show humorous rejection counter
+      if (noClickCount <= 10) {
+        noCounter.textContent = counterMessages[noClickCount] || `${noClickCount} times... I lost count of my tears 😭`;
+        noCounter.classList.add('visible');
+      }
+    });
+
+    // ===== CLOSE POPUP =====
+    // (Handled above in the dodge section for both desktop & mobile)
+
+    // ===== TYPING EFFECT FOR ROMANTIC QUOTE =====
+    function typeQuote(text) {
+      let i = 0;
+      quoteText.textContent = '';
+      const interval = setInterval(() => {
+        if (i < text.length) {
+          quoteText.textContent += text.charAt(i);
+          i++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 45);
+    }
+
+    // ===== CONFETTI EFFECT =====
+    function launchConfetti() {
+      const colors = ['#ec407a', '#f48fb1', '#ff80ab', '#ff4081', '#f50057',
+                       '#fce4ec', '#e91e63', '#ffcdd2', '#d81b60', '#f8bbd0'];
+
+      for (let i = 0; i < 80; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti-piece');
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = (6 + Math.random() * 8) + 'px';
+        confetti.style.height = (6 + Math.random() * 8) + 'px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        confetti.style.animationDuration = (2 + Math.random() * 3) + 's';
+        confetti.style.animationDelay = (Math.random() * 1.5) + 's';
+        document.body.appendChild(confetti);
+
+        // Clean up confetti after animation
+        setTimeout(() => confetti.remove(), 5000);
+      }
+    }
+  </script>
+</body>
+</html>
